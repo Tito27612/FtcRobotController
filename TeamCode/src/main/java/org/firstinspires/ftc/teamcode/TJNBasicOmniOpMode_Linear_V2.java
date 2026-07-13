@@ -42,9 +42,9 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 @TeleOp(name="AA Omni Linear OpMode", group="Linear OpMode")
 //@Disabled
 public class TJNBasicOmniOpMode_Linear_V2 extends LinearOpMode {
-
+    //added final because stopwatch object never changes
+    private final ElapsedTime runtime = new ElapsedTime();
     // Declare OpMode members for each of the 4 motors.
-    private ElapsedTime runtime = new ElapsedTime();
     private DcMotor frontLeftDrive = null;
     private DcMotor backLeftDrive = null;
     private DcMotor frontRightDrive = null;
@@ -53,33 +53,23 @@ public class TJNBasicOmniOpMode_Linear_V2 extends LinearOpMode {
     private CRServo intakeservo = null;
     private DcMotor intakemotor = null;
     private Servo flipper = null;
-    private DcMotorEx wheel = null; // AA Change
+    private DcMotorEx wheel = null;
+    // AA Change due to located on the expansion hub controller
+    // added private declarations for state machine variables
+    private final String IDLE = "IDLE";
+    private final String SPIN_UP = "SPIN_UP";
+    private final String LAUNCH = "LAUNCH";
+    private final String LAUNCHING = "LAUNCHING";
 
-    String IDLE;
-    String SPIN_UP;
-    String LAUNCH;
-    String LAUNCHING;
-    String launchState;
-    int LAUNCHER_TARGET_VELOCITY;
-    int LAUNCHER_MIN_VELOCITY;
-    ElapsedTime launchTime;
+    private String launchState;
+    private int LAUNCHER_TARGET_VELOCITY;
+    private int LAUNCHER_MIN_VELOCITY;
+    private ElapsedTime launchTime;
 
-    private void createVariables() {
-
-        IDLE = "IDLE";
-        SPIN_UP = "SPIN_UP";
-        LAUNCH = "LAUNCH";
-        LAUNCHING = "LAUNCHING";
-        launchState = IDLE;
-        LAUNCHER_TARGET_VELOCITY = 1300;
-        LAUNCHER_MIN_VELOCITY = 1150;
-        launchTime = new ElapsedTime();
-    }
 
     @Override
     public void runOpMode() {
-        createVariables(); //AA Change
-
+//Initialize hardware maps first
         // Initialize the hardware variables. Note that the strings used here must correspond
         // to the names assigned during the robot configuration step on the DS or RC devices.
         frontLeftDrive = hardwareMap.get(DcMotor.class, "front_left_drive");
@@ -115,11 +105,19 @@ public class TJNBasicOmniOpMode_Linear_V2 extends LinearOpMode {
         telemetry.update();
 
         waitForStart();
+        //driver presses the play button
+
+        //reset timers & stats after start button is hit
         runtime.reset();
+        launchTime = new ElapsedTime();
+        launchState = IDLE;
+        LAUNCHER_TARGET_VELOCITY = 1300;
+        LAUNCHER_MIN_VELOCITY = 1150;
 
 
         if (opModeIsActive()) {
             wheel.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
             while (opModeIsActive()) {
                 // --- WHEEL SPEED CONTROLS ---
                 // --- INTAKE CONTROLS ---
@@ -137,7 +135,7 @@ public class TJNBasicOmniOpMode_Linear_V2 extends LinearOpMode {
                 }
 
                 // --- DRIVING CONTROLS (Always Active) ---
-                double max;
+
                 double axial = -gamepad1.left_stick_y;
                 double lateral = gamepad1.left_stick_x;
                 double yaw = gamepad1.right_stick_x;
@@ -147,7 +145,7 @@ public class TJNBasicOmniOpMode_Linear_V2 extends LinearOpMode {
                 double backLeftPower = axial - lateral + yaw;
                 double backRightPower = axial + lateral - yaw;
 
-                max = Math.max(Math.abs(frontLeftPower), Math.abs(frontRightPower));
+                double max = Math.max(Math.abs(frontLeftPower), Math.abs(frontRightPower));
                 max = Math.max(max, Math.abs(backLeftPower));
                 max = Math.max(max, Math.abs(backRightPower));
 
