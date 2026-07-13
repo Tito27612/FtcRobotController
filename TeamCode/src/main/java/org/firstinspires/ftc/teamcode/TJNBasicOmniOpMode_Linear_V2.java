@@ -27,7 +27,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-//trying to upload this code to github
+//trying to upload this code to GitHub
 
 package org.firstinspires.ftc.teamcode;
 
@@ -35,9 +35,11 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
-@TeleOp(name="July Omni Linear OpMode", group="Linear OpMode")
+@TeleOp(name="AA Omni Linear OpMode", group="Linear OpMode")
 //@Disabled
 public class TJNBasicOmniOpMode_Linear_V2 extends LinearOpMode {
 
@@ -47,13 +49,36 @@ public class TJNBasicOmniOpMode_Linear_V2 extends LinearOpMode {
     private DcMotor backLeftDrive = null;
     private DcMotor frontRightDrive = null;
     private DcMotor backRightDrive = null;
-    private CRServo cycler = null;
-    private DcMotor intake = null;
-    private CRServo flipper = null;
-    private DcMotor wheel = null;
+    // Declare OpMode members for intake servo & motor, flipper servo, and shooting wheel.
+    private CRServo intakeservo = null;
+    private DcMotor intakemotor = null;
+    private Servo flipper = null;
+    private DcMotorEx wheel = null; // AA Change
+
+    String IDLE;
+    String SPIN_UP;
+    String LAUNCH;
+    String LAUNCHING;
+    String launchState;
+    int LAUNCHER_TARGET_VELOCITY;
+    int LAUNCHER_MIN_VELOCITY;
+    ElapsedTime launchTime;
+
+    private void createVariables() {
+
+        IDLE = "IDLE";
+        SPIN_UP = "SPIN_UP";
+        LAUNCH = "LAUNCH";
+        LAUNCHING = "LAUNCHING";
+        launchState = IDLE;
+        LAUNCHER_TARGET_VELOCITY = 1300;
+        LAUNCHER_MIN_VELOCITY = 1150;
+        launchTime = new ElapsedTime();
+    }
 
     @Override
     public void runOpMode() {
+        createVariables(); //AA Change
 
         // Initialize the hardware variables. Note that the strings used here must correspond
         // to the names assigned during the robot configuration step on the DS or RC devices.
@@ -61,10 +86,11 @@ public class TJNBasicOmniOpMode_Linear_V2 extends LinearOpMode {
         backLeftDrive = hardwareMap.get(DcMotor.class, "back_left_drive");
         frontRightDrive = hardwareMap.get(DcMotor.class, "front_right_drive");
         backRightDrive = hardwareMap.get(DcMotor.class, "back_right_drive");
-        cycler = hardwareMap.get(CRServo.class, "cycler");
-        intake = hardwareMap.get(DcMotor.class, "intake");
-        flipper = hardwareMap.get(CRServo.class, "flipper");
-        wheel = hardwareMap.get(DcMotor.class, "wheel");
+        intakeservo = hardwareMap.get(CRServo.class, "intake_servo");
+        intakemotor = hardwareMap.get(DcMotor.class, "intake_motor");
+        flipper = hardwareMap.get(Servo.class, "flipper");
+        wheel = hardwareMap.get(DcMotorEx.class, "wheel"); //AA Change
+
 
         // ########################################################################################
         // !!!            IMPORTANT Drive Information. Test your motor directions.            !!!!!
@@ -81,6 +107,9 @@ public class TJNBasicOmniOpMode_Linear_V2 extends LinearOpMode {
         frontRightDrive.setDirection(DcMotor.Direction.FORWARD);
         backRightDrive.setDirection(DcMotor.Direction.FORWARD);
 
+        intakemotor.setDirection(DcMotor.Direction.FORWARD);
+        wheel.setDirection(DcMotor.Direction.FORWARD);
+
         // Wait for the game to start (driver presses START)
         telemetry.addData("Status", "Initialized");
         telemetry.update();
@@ -88,62 +117,69 @@ public class TJNBasicOmniOpMode_Linear_V2 extends LinearOpMode {
         waitForStart();
         runtime.reset();
 
-        // run until the end of the match (driver presses STOP)
-        while (opModeIsActive()) {
-            double max;
 
-            // POV Mode uses left joystick to go forward & strafe, and right joystick to rotate.
-            double axial   = -gamepad1.left_stick_y;  // Note: pushing stick forward gives negative value
-            double lateral =  gamepad1.left_stick_x;
-            double yaw     =  gamepad1.right_stick_x;
+        if (opModeIsActive()) {
+            wheel.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            while (opModeIsActive()) {
+                // --- WHEEL SPEED CONTROLS ---
+                // --- INTAKE CONTROLS ---
+                if (gamepad2.dpad_left) {
+                    intakeservo.setPower(1);
+                } else if (gamepad2.dpad_down) {
+                    intakeservo.setPower(0);
+                }
 
-            // Combine the joystick requests for each axis-motion to determine each wheel's power.
-            // Set up a variable for each drive wheel to save the power level for telemetry.
-            double frontLeftPower  = axial + lateral + yaw;
-            double frontRightPower = axial - lateral - yaw;
-            double backLeftPower   = axial - lateral + yaw;
-            double backRightPower  = axial + lateral - yaw;
+// --- FLIPPER CONTROLS ---
+                if (gamepad2.dpad_right) {
+                    flipper.setPosition(0.7);
+                } else if (gamepad2.dpad_up) {
+                    flipper.setPosition(0.5);
+                }
 
-            // Normalize the values so no wheel power exceeds 100%
-            // This ensures that the robot maintains the desired motion.
-            max = Math.max(Math.abs(frontLeftPower), Math.abs(frontRightPower));
-            max = Math.max(max, Math.abs(backLeftPower));
-            max = Math.max(max, Math.abs(backRightPower));
+                // --- DRIVING CONTROLS (Always Active) ---
+                double max;
+                double axial = -gamepad1.left_stick_y;
+                double lateral = gamepad1.left_stick_x;
+                double yaw = gamepad1.right_stick_x;
 
-            if (max > 1.0) {
-                frontLeftPower  /= max;
-                frontRightPower /= max;
-                backLeftPower   /= max;
-                backRightPower  /= max;
+                double frontLeftPower = axial + lateral + yaw;
+                double frontRightPower = axial - lateral - yaw;
+                double backLeftPower = axial - lateral + yaw;
+                double backRightPower = axial + lateral - yaw;
+
+                max = Math.max(Math.abs(frontLeftPower), Math.abs(frontRightPower));
+                max = Math.max(max, Math.abs(backLeftPower));
+                max = Math.max(max, Math.abs(backRightPower));
+
+                if (max > 1.0) {
+                    frontLeftPower /= max;
+                    frontRightPower /= max;
+                    backLeftPower /= max;
+                    backRightPower /= max;
+                }
+
+                frontLeftDrive.setPower(frontLeftPower);
+                frontRightDrive.setPower(frontRightPower);
+                backLeftDrive.setPower(backLeftPower);
+                backRightDrive.setPower(backRightPower);
+
+                // --- SCREEN DATA ---
+                telemetry.addData("Status", "Run Time: " + runtime.toString());
+                telemetry.addData("Front left/Right", "%4.2f, %4.2f", frontLeftPower, frontRightPower);
+                telemetry.addData("Back  left/Right", "%4.2f, %4.2f", backLeftPower, backRightPower);
+                telemetry.addData("Launch State", launchState);
+                telemetry.addData("Wheel Velocity", wheel.getVelocity());
+                telemetry.update();
             }
-
-            // This is test code:
-            //
-            // Uncomment the following code to test your motor directions.
-            // Each button should make the corresponding motor run FORWARD.
-            //   1) First get all the motors to take to correct positions on the robot
-            //      by adjusting your Robot Configuration if necessary.
-            //   2) Then make sure they run in the correct direction by modifying the
-            //      the setDirection() calls above.
-            // Once the correct motors move in the correct direction re-comment this code.
-
-            /*
-            frontLeftPower  = gamepad1.x ? 1.0 : 0.0;  // X gamepad
-            backLeftPower   = gamepad1.a ? 1.0 : 0.0;  // A gamepad
-            frontRightPower = gamepad1.y ? 1.0 : 0.0;  // Y gamepad
-            backRightPower  = gamepad1.b ? 1.0 : 0.0;  // B gamepad
-            */
-
-            // Send calculated power to wheels
-            frontLeftDrive.setPower(frontLeftPower);
-            frontRightDrive.setPower(frontRightPower);
-            backLeftDrive.setPower(backLeftPower);
-            backRightDrive.setPower(backRightPower);
-
-            // Show the elapsed game time and wheel power.
-            telemetry.addData("Status", "Run Time: " + runtime.toString());
-            telemetry.addData("Front left/Right", "%4.2f, %4.2f", frontLeftPower, frontRightPower);
-            telemetry.addData("Back  left/Right", "%4.2f, %4.2f", backLeftPower, backRightPower);
-            telemetry.update();
         }
-    }}
+    }
+}
+                // run until the end of the match (driver presses STOP)
+        //AA change - moved inside one loop as AI said it would prevent freezing
+
+
+
+
+
+
+
