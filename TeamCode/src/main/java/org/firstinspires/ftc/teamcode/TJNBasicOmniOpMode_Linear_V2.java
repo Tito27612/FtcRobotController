@@ -39,6 +39,11 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+//import static com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior.BRAKE;
+//import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+//import com.qualcomm.robotcore.hardware.DcMotorSimple;
+//import com.qualcomm.robotcore.hardware.PIDFCoefficients;
+
 @TeleOp(name="AA Omni Linear OpMode", group="Linear OpMode")
 //@Disabled
 public class TJNBasicOmniOpMode_Linear_V2 extends LinearOpMode {
@@ -56,14 +61,15 @@ public class TJNBasicOmniOpMode_Linear_V2 extends LinearOpMode {
     private DcMotorEx wheel = null;
     // AA Change due to located on the expansion hub controller
     // added private declarations for state machine variables
-    private final String IDLE = "IDLE";
-    private final String SPIN_UP = "SPIN_UP";
-    private final String LAUNCH = "LAUNCH";
-    private final String LAUNCHING = "LAUNCHING";
-
-    private String launchState;
-    private int LAUNCHER_TARGET_VELOCITY;
-    private int LAUNCHER_MIN_VELOCITY;
+    //private final String IDLE = "IDLE";
+    //private final String SPIN_UP = "SPIN_UP";
+    //private final String LAUNCH = "LAUNCH";
+    //private final String LAUNCHING = "LAUNCHING";
+    final double LAUNCHER_TARGET_VELOCITY = 1300;
+    final double LAUNCHER_MIN_VELOCITY = 1150;
+    //private String launchState;
+    //private int LAUNCHER_TARGET_VELOCITY;
+    //private int LAUNCHER_MIN_VELOCITY;
     private ElapsedTime launchTime;
 
 
@@ -77,10 +83,9 @@ public class TJNBasicOmniOpMode_Linear_V2 extends LinearOpMode {
         frontRightDrive = hardwareMap.get(DcMotor.class, "front_right_drive");
         backRightDrive = hardwareMap.get(DcMotor.class, "back_right_drive");
         intakeservo = hardwareMap.get(CRServo.class, "intake_servo");
-        intakemotor = hardwareMap.get(DcMotor.class, "intake_motor");
+        intakemotor = hardwareMap.get(DcMotorEx.class, "intake_motor");
         flipper = hardwareMap.get(Servo.class, "flipper");
         wheel = hardwareMap.get(DcMotorEx.class, "wheel"); //AA Change
-
 
         // ########################################################################################
         // !!!            IMPORTANT Drive Information. Test your motor directions.            !!!!!
@@ -99,6 +104,7 @@ public class TJNBasicOmniOpMode_Linear_V2 extends LinearOpMode {
 
         intakemotor.setDirection(DcMotor.Direction.FORWARD);
         wheel.setDirection(DcMotor.Direction.FORWARD);
+        wheel.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
         // Wait for the game to start (driver presses START)
         telemetry.addData("Status", "Initialized");
@@ -110,29 +116,50 @@ public class TJNBasicOmniOpMode_Linear_V2 extends LinearOpMode {
         //reset timers & stats after start button is hit
         runtime.reset();
         launchTime = new ElapsedTime();
-        launchState = IDLE;
-        LAUNCHER_TARGET_VELOCITY = 1300;
-        LAUNCHER_MIN_VELOCITY = 1150;
+        //launchState = IDLE;
+
 
 
         if (opModeIsActive()) {
             wheel.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            wheel.setVelocityPIDFCoefficients(300, 0, 0, 10);
 
             while (opModeIsActive()) {
                 // --- WHEEL SPEED CONTROLS ---
+                if (gamepad2.y) {
+                    wheel.setVelocity(LAUNCHER_TARGET_VELOCITY);
+                } else if (gamepad2.x) {
+                    wheel.setVelocity(0);
+                }
+
                 // --- INTAKE CONTROLS ---
-                if (gamepad2.dpad_left) {
+                if (gamepad1.right_bumper) {
+                    //turns on intake system for balls on floor into hopper
+                    intakemotor.setPower(-0.5);
                     intakeservo.setPower(1);
-                } else if (gamepad2.dpad_down) {
+                } else if (gamepad1.left_bumper) {
+                    //turns off intake system
+                    intakemotor.setPower(0);
                     intakeservo.setPower(0);
+                } else if (gamepad1.b) {
+                    //reverses intake system if there is a jamb/blcokage in system
+                    intakemotor.setPower(0.4);
+                    intakeservo.setPower(-1);
                 }
 
 // --- FLIPPER CONTROLS ---
                 if (gamepad2.dpad_right) {
+                    //lifting flipper up to launch ball
                     flipper.setPosition(0.7);
                 } else if (gamepad2.dpad_up) {
+                    //lowering flipper down
                     flipper.setPosition(0.5);
                 }
+
+                // --- STATE MACHINE UPDATE --- // FIX: Call the method here and pass a controller input (e.g., Gamepad 2 Right Bumper)
+                //launch(gamepad2.right_bumper);
+
+
 
                 // --- DRIVING CONTROLS (Always Active) ---
 
@@ -165,13 +192,27 @@ public class TJNBasicOmniOpMode_Linear_V2 extends LinearOpMode {
                 telemetry.addData("Status", "Run Time: " + runtime.toString());
                 telemetry.addData("Front left/Right", "%4.2f, %4.2f", frontLeftPower, frontRightPower);
                 telemetry.addData("Back  left/Right", "%4.2f, %4.2f", backLeftPower, backRightPower);
-                telemetry.addData("Launch State", launchState);
+                //telemetry.addData("Launch State", launchState);
                 telemetry.addData("Wheel Velocity", wheel.getVelocity());
                 telemetry.update();
             }
+
         }
+
     }
-}
+    //adding in more of the launch code converted from blocks:
+//    private void launch(boolean shotRequested) {
+//       if (launchState.equals(IDLE)) {
+//            if (shotRequested == true) {
+//              launchState = SPIN_UP;
+//            }
+//        } else if (launchState.equals(SPIN_UP)) {
+//            wheel.setVelocity(LAUNCHER_TARGET_VELOCITY);
+//            if (wheel.getVelocity() > LAUNCHER_MIN_VELOCITY) {
+//                launchState = LAUNCH;
+//            }
+//        }
+    }
                 // run until the end of the match (driver presses STOP)
         //AA change - moved inside one loop as AI said it would prevent freezing
 
