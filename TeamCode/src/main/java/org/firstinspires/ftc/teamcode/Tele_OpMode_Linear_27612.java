@@ -124,7 +124,7 @@ public class Tele_OpMode_Linear_27612 extends LinearOpMode {
                 // Intake system control
                 if (gamepad1.b) {
                     // Reverses intake system (outtake)
-                    intakeMotor.setPower(0.4);
+                    intakeMotor.setPower(-0.4);
                     intakeServo.setPower(-1);
                 } else if (intakeOn) {
                     // Turns on intake system using target velocity
