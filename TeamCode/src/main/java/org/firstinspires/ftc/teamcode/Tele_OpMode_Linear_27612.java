@@ -79,7 +79,7 @@ public class Tele_OpMode_Linear_27612 extends LinearOpMode {
         frontRightDrive.setDirection(DcMotor.Direction.FORWARD);
         backRightDrive.setDirection(DcMotor.Direction.FORWARD);
         intakeMotor.setDirection(DcMotor.Direction.REVERSE);
-        launcherWheel.setDirection(DcMotor.Direction.FORWARD);
+        launcherWheel.setDirection(DcMotor.Direction.REVERSE);
 
         launcherWheel.setZeroPowerBehavior(BRAKE);
         frontLeftDrive.setZeroPowerBehavior(BRAKE);
@@ -89,7 +89,7 @@ public class Tele_OpMode_Linear_27612 extends LinearOpMode {
 
         launcherWheel.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         launcherWheel.setVelocityPIDFCoefficients(10, 0, 0, 14);
-        
+
         intakeMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         intakeMotor.setVelocityPIDFCoefficients(10, 0, 0, 14);
 
@@ -111,25 +111,23 @@ public class Tele_OpMode_Linear_27612 extends LinearOpMode {
                 } else if (gamepad2.x) {
                     launcherWheel.setVelocity(0);
                 }
-                
+
                 if (gamepad1.right_bumper && !previousBumperState) {
-                    intakeOn = !intakeOn;
-                }
+                    intakeOn = !intakeOn;}             }
                 // Save current state for the next loop cycle
                 previousBumperState = gamepad1.right_bumper;
                 // Left bumper serves as an explicit safety stop button
                 if (gamepad1.left_bumper) {
                     intakeOn = false;
-                }
-                // Intake system control
-                if (gamepad1.b) {
+                    // Intake system control
+                }if (gamepad1.b) {
                     // Reverses intake system (outtake)
-                    intakeMotor.setPower(-0.4);
-                    intakeServo.setPower(-1);
+                    intakeMotor.setVelocity(-INTAKE_TARGET_VELOCITY);
+                    intakeServo.setPower(1);
                 } else if (intakeOn) {
                     // Turns on intake system using target velocity
                     intakeMotor.setVelocity(INTAKE_TARGET_VELOCITY);
-                    intakeServo.setPower(1);
+                    intakeServo.setPower(-1);
                 } else {
                     // Turns off intake system
                     intakeMotor.setVelocity(0);
@@ -186,8 +184,6 @@ public class Tele_OpMode_Linear_27612 extends LinearOpMode {
                 telemetry.update();
             }
         }
-    }
-
 
 
 
