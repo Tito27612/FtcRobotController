@@ -113,14 +113,16 @@ public class Tele_OpMode_Linear_27612 extends LinearOpMode {
                 }
 
                 if (gamepad1.right_bumper && !previousBumperState) {
-                    intakeOn = !intakeOn;}             }
+                    intakeOn = !intakeOn;
+                }
                 // Save current state for the next loop cycle
                 previousBumperState = gamepad1.right_bumper;
                 // Left bumper serves as an explicit safety stop button
                 if (gamepad1.left_bumper) {
                     intakeOn = false;
-                    // Intake system control
-                }if (gamepad1.b) {
+                }
+                // Intake system control
+                if (gamepad1.b) {
                     // Reverses intake system (outtake)
                     intakeMotor.setVelocity(-INTAKE_TARGET_VELOCITY);
                     intakeServo.setPower(1);
@@ -142,11 +144,11 @@ public class Tele_OpMode_Linear_27612 extends LinearOpMode {
                     flipper.setPosition(0.5);
                 }
                 //half speed for shooting alignment
-            if (gamepad1.dpad_down) {
-                driveSpeedMultiplier = 0.3; //
-            } else if (gamepad1.dpad_up) {
-                driveSpeedMultiplier = 1.0; // Return to standard full speed
-            }
+                if (gamepad1.dpad_down) {
+                    driveSpeedMultiplier = 0.3; //
+                }   else if (gamepad1.dpad_up) {
+                    driveSpeedMultiplier = 1.0; // Return to standard full speed
+                }
 
                 //OMNI DRIVING CONTROLS (Always Active)
                 double axial = -gamepad1.left_stick_y;
@@ -184,6 +186,8 @@ public class Tele_OpMode_Linear_27612 extends LinearOpMode {
                 telemetry.update();
             }
         }
+    }
+
 
 
 
