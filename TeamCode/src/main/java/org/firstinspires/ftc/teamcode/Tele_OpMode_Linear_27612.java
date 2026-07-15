@@ -74,6 +74,9 @@ public class Tele_OpMode_Linear_27612 extends LinearOpMode {
         flipper = hardwareMap.get(Servo.class, "flipper");
         launcherWheel = hardwareMap.get(DcMotorEx.class, "wheel");
 
+        // Set the flipper to its starting "down" position immediately on Init
+        flipper.setPosition(0.5);
+
         frontLeftDrive.setDirection(DcMotor.Direction.REVERSE);
         backLeftDrive.setDirection(DcMotor.Direction.REVERSE);
         frontRightDrive.setDirection(DcMotor.Direction.FORWARD);
