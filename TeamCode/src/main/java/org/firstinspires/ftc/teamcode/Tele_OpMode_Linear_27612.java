@@ -57,8 +57,11 @@ public class Tele_OpMode_Linear_27612 extends LinearOpMode {
     final double INTAKE_TARGET_VELOCITY = 800;
     private boolean intakeOn = false;
     private boolean previousBumperState = false;
+    private boolean slowDriveOn = false;
+    private boolean previousDriveState = false;
 
-//for a default full speed
+
+    //for a default full speed
     private double driveSpeedMultiplier = 1.0;
 
     @Override
@@ -100,6 +103,9 @@ public class Tele_OpMode_Linear_27612 extends LinearOpMode {
         telemetry.update();
 
         previousBumperState = gamepad1.right_bumper;
+        previousDriveState = (gamepad1.left_trigger > 0.5);
+
+
 
         // Wait for the game to start (driver presses START)
         waitForStart();
@@ -139,19 +145,34 @@ public class Tele_OpMode_Linear_27612 extends LinearOpMode {
                     intakeServo.setPower(0);
                 }
                 //Flipper Control
-                if (gamepad2.b) {
+                if (gamepad2.dpad_left) {
                     //lifting flipper up to launch ball
                     flipper.setPosition(0.7);
-                } else if (gamepad2.a) {
+                } else if (gamepad2.dpad_down) {
                     //lowering flipper down
                     flipper.setPosition(0.5);
                 }
-                //half speed for shooting alignment
+                // --- Speed Control (D-pad or Left Trigger Toggle) ---
                 if (gamepad1.dpad_down) {
-                    driveSpeedMultiplier = 0.3; //
-                }   else if (gamepad1.dpad_up) {
-                    driveSpeedMultiplier = 1.0; // Return to standard full speed
+                    slowDriveOn = true;
+                } else if (gamepad1.dpad_up) {
+                    slowDriveOn = false;
                 }
+
+                // Left Trigger Toggle Logic
+                boolean currentTriggerState = (gamepad1.left_trigger > 0.5);
+                if (currentTriggerState && !previousDriveState) {
+                    slowDriveOn = !slowDriveOn;
+                }
+                previousDriveState = currentTriggerState;
+
+                // Left bumper serves as an explicit safety reset to full speed
+                if (gamepad1.left_bumper) {
+                    slowDriveOn = false;
+                }
+
+                // Apply the multiplier based on the slowDriveOn state
+                driveSpeedMultiplier = slowDriveOn ? 0.3 : 1.0;
 
                 //OMNI DRIVING CONTROLS (Always Active)
                 double axial = -gamepad1.left_stick_y;

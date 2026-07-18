@@ -26,9 +26,9 @@ public class BlueGOALauto extends LinearOpMode {
 
     // Distances in INCHES for each wheel (Adjust these individually to fix drift)
     double FL_DISTANCE = -80.0;
-    double FR_DISTANCE = 40.0;
+    double FR_DISTANCE = -80.0;
     double BL_DISTANCE = -80.0;
-    double BR_DISTANCE = -40.0;
+    double BR_DISTANCE = -80.0;
 
     @Override
     public void runOpMode() {
@@ -67,9 +67,9 @@ public class BlueGOALauto extends LinearOpMode {
 
         if (opModeIsActive()) {
             // Start subsystems
-            intakeServo.setPower(-1);
-            launcherWheel.setVelocity(-1500);
-            intakeMotor.setPower(-0.5);
+            // intakeServo.setPower(-1);
+            // launcherWheel.setVelocity(-1500);
+            // intakeMotor.setPower(-0.5);
             sleep(500);
             
             // Initial Backup (Using the 4 individual wheel distances)
@@ -99,7 +99,7 @@ public class BlueGOALauto extends LinearOpMode {
         int targetFR = (int)(fr * TICKS_PER_INCH);
         int targetBL = (int)(bl * TICKS_PER_INCH);
         int targetBR = (int)(br * TICKS_PER_INCH);
-        
+
         moveRobot(targetFL, targetFR, targetBL, targetBR, power, timeout);
     }
 
@@ -108,21 +108,21 @@ public class BlueGOALauto extends LinearOpMode {
      */
     private void moveRobot(int fl, int fr, int bl, int br, double power, int timeout) {
         setDriveMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        
+
         frontLeft.setTargetPosition(fl);
         frontRight.setTargetPosition(fr);
         backLeft.setTargetPosition(bl);
         backRight.setTargetPosition(br);
-        
+
         setDriveMode(DcMotor.RunMode.RUN_TO_POSITION);
-        
+
         setDrivePower(Math.abs(power), Math.abs(power), Math.abs(power), Math.abs(power));
-        
+
         long startTime = System.currentTimeMillis();
-        while (opModeIsActive() && 
-              (System.currentTimeMillis() - startTime < timeout) && 
+        while (opModeIsActive() &&
+              (System.currentTimeMillis() - startTime < timeout) &&
               (frontLeft.isBusy() || frontRight.isBusy() || backLeft.isBusy() || backRight.isBusy())) {
-            
+
             telemetry.addData("FL Remaining", fl - frontLeft.getCurrentPosition());
             telemetry.addData("FR Remaining", fr - frontRight.getCurrentPosition());
             telemetry.addData("BL Remaining", bl - backLeft.getCurrentPosition());
@@ -130,7 +130,7 @@ public class BlueGOALauto extends LinearOpMode {
             telemetry.update();
             idle();
         }
-        
+
         stopRobot();
         setDriveMode(DcMotor.RunMode.RUN_USING_ENCODER);
     }
@@ -148,7 +148,7 @@ public class BlueGOALauto extends LinearOpMode {
         backLeft.setPower(bl);
         backRight.setPower(br);
     }
-    
+
     private void stopRobot() {
         setDrivePower(0,0,0,0);
     }
