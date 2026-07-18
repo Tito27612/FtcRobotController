@@ -144,6 +144,7 @@ public class Tele_OpMode_Linear_27612 extends LinearOpMode {
                     intakeMotor.setVelocity(0);
                     intakeServo.setPower(0);
                 }
+
                 //Flipper Control
                 if (gamepad2.dpad_left) {
                     //lifting flipper up to launch ball
